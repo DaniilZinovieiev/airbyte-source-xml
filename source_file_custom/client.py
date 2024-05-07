@@ -253,6 +253,16 @@ class URLFile:
         return smart_open.open(url, transport_params=dict(client=client), **self.args)
 
 
+def cast_number(string):
+    try:
+        return int(string)
+    except:
+        try:
+            return float(string)
+        except:
+            return string
+
+
 class Client:
     """Class that manages reading and parsing data from streams"""
 
@@ -536,7 +546,11 @@ class Client:
         root = tree.getroot()
         data = []
         for child in root:
-            data.append({elem.tag: elem.text for elem in child})
+            json = {}
+            for (key, value) in child.items():
+                json.update({child.tag + "_" + key: value})
+            json.update({elem.tag: elem.text for elem in child})
+            data.append(json)
         return data
 
     def load_xml_schema(self, fp) -> dict:
