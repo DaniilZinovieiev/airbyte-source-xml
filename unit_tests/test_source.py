@@ -23,6 +23,7 @@ from airbyte_cdk.models import (
 from airbyte_cdk.utils import AirbyteTracedException
 from airbyte_protocol.models.airbyte_protocol import Type as MessageType
 from source_file_custom.source import SourceFileCustom
+from source_file_custom.client import Client
 
 logger = logging.getLogger("airbyte")
 
@@ -31,6 +32,13 @@ logger = logging.getLogger("airbyte")
 def source():
     return SourceFileCustom()
 
+@pytest.fixture
+def client():
+    return Client(
+        dataset_name="test_dataset",
+        url="scp://test_dataset",
+        provider={"provider": {"storage": "HTTPS", "reader_impl": "gcsfs", "user_agent": True}},
+    )
 
 @pytest.fixture
 def config():
@@ -68,6 +76,19 @@ def test_read_xml(source, config_xml):
     #         assert key in record, f"Record missing expected key '{key}': {record}"
 
 
+def test_load_xml_schema_with_nested(client):
+    file_path = '../source_file_custom/custom_xml_mock.xml'
+    with open(file_path, 'r') as file:
+        json_schema = client.load_xml_schema(file)
+
+    print(json_schema)
+
+def test_load_xml_with_nested(client):
+    file_path = '../source_file_custom/custom_xml_mock.xml'
+    with open(file_path, 'r') as file:
+        json_schema = client.load_xml(file)
+
+    print(json_schema)
 
 
 def test_csv_with_utf16_encoding(absolute_path, test_files):

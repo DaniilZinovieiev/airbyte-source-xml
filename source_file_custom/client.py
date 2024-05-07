@@ -553,21 +553,57 @@ class Client:
             data.append(json)
         return data
 
+
     def load_xml_schema(self, fp) -> dict:
-        builder = SchemaBuilder()
+        def parse_element(element):
+
+            element_schema = {'type': 'element'}
+
+            if element.attrib:
+
+                attributes = {}
+                for attr_name, attr_value in element.attrib.items():
+
+                    attributes[attr_name] = {'type': 'String'}
+
+                element_schema['attributes'] = attributes
+
+            children = {}
+            for child in element:
+                child_tag = child.tag
+
+                if child_tag in children:
+
+                    if not isinstance(children[child_tag], list):
+                        children[child_tag] = [children[child_tag]]
+
+                    children[child_tag].append(parse_element(child))
+                else:
+
+                    children[child_tag] = parse_element(child)
+
+            if children:
+                element_schema['children'] = children
+            else:
+
+                element_schema['type'] = 'String'
+
+            return element_schema
 
         tree = ET.parse(fp)
         root = tree.getroot()
 
-        def process_element(element):
-            element_dict = {child.tag: child.text for child in element}
-            builder.add_object(element_dict)
-            for child in element:
-                process_element(child)
+        if len(root) > 0:
 
-        process_element(root)
+            first_element = root[0]
+            first_element_tag = first_element.tag
 
-        return builder.to_schema()
+            first_element_schema = parse_element(first_element)
+
+            return {first_element_tag: first_element_schema}
+        else:
+
+            return {}
 
 
 class URLFileSecure(URLFile):
